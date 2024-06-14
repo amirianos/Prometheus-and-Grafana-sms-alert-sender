@@ -1,0 +1,8 @@
+contacts:
+  - "09*********"
+  - "09*********"
+smsgateway:
+  url: "http://**.**.**.**:****/*****"
+  username: "****"
+  password: "****"
+
