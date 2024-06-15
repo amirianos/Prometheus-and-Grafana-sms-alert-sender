@@ -216,6 +216,7 @@ func sendSMS(message, phoneNumber, URL, smsUsername, smsPassword string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("received non-OK response status: %v", resp.Status)
 	}
+	log.Println(resp.StatusCode, smsRequest , resp)
 
 	return nil
 }
