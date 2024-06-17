@@ -17,6 +17,7 @@ type Config struct {
 	Containerid      string `yaml:"containerid"`
 	Restarturl       string `yaml:"restarturl"`
 	Alertname       string `yaml:"alertname"`
+	Runcommands     bool `yaml:"runcommands"`
 	Smsgateway struct {
 		URL      string `yaml:"url"`
 		Username string `yaml:"username"`
@@ -177,7 +178,7 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 	}
 	for _, phoneNumber := range configs.Contacts {
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
-		if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname {
+		if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
 			cmd := exec.Command("sh", "-c", "docker restart", configs.Containerid)
 			var out bytes.Buffer
 			cmd.Stdout = &out

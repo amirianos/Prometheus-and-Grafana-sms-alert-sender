@@ -4,6 +4,7 @@ contacts:
 containerid: ""
 restarturl: ""
 alertname: ""
+runcommands: False
 smsgateway:
   url: "http://**.**.**.**:****/*****"
   username: "****"
