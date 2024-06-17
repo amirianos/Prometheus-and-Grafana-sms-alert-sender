@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"bytes"
 	"time"
+	"os/exec"
 )
 
 type Config struct {
@@ -190,6 +191,8 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 			resp, err := http.Get(configs.Restarturl)
 			if err != nil {
 				log.Println("can not send request to start Engine")
+			} else {
+				log.Println(resp)
 			}
 			
 		}
