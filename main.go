@@ -16,6 +16,7 @@ type Config struct {
 	Contacts   []string `yaml:"contacts"`
 	Containerid      string `yaml:"containerid"`
 	Restarturl       string `yaml:"restarturl"`
+	Alertname       string `yaml:"alertname"`
 	Smsgateway struct {
 		URL      string `yaml:"url"`
 		Username string `yaml:"username"`
@@ -176,7 +177,7 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 	}
 	for _, phoneNumber := range configs.Contacts {
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
-		if alertRequest.Alerts[0].Labels.Alertname == "Telnet_To_App_Port" {
+		if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname {
 			cmd := exec.Command("sh", "-c", "docker restart", configs.Containerid)
 			var out bytes.Buffer
 			cmd.Stdout = &out
@@ -184,7 +185,6 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 			err := cmd.Run()
 			if err != nil {
 				log.Println("Error running command: %v", err)
-				return 0
 			}
 			resp, err := http.Get(configs.Restarturl)
 			if err != nil {

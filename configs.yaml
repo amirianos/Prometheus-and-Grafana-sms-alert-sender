@@ -1,6 +1,9 @@
 contacts:
   - "09*********"
   - "09*********"
+containerid: ""
+restarturl: ""
+alertname: ""
 smsgateway:
   url: "http://**.**.**.**:****/*****"
   username: "****"
