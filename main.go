@@ -13,12 +13,14 @@ import (
 )
 
 type Config struct {
-
 	Contacts   []string `yaml:"contacts"`
 	Containerid      string `yaml:"containerid"`
 	Restarturl       string `yaml:"restarturl"`
 	Alertname       string `yaml:"alertname"`
 	Runcommands     bool `yaml:"runcommands"`
+	Commands     []string `yaml:"commands"`
+	RootPassword  string `yaml:"rootpassword"`
+	ServerIP      string `yaml:"serverip"`
 	Smsgateway struct {
 		URL      string `yaml:"url"`
 		Username string `yaml:"username"`
@@ -180,20 +182,16 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 	for _, phoneNumber := range configs.Contacts {
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
 		if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
-			cmd := exec.Command("sh", "-c", "docker restart", configs.Containerid)
-			var out bytes.Buffer
-			cmd.Stdout = &out
-
-			err := cmd.Run()
-			if err != nil {
-				log.Println("Error running command: %v", err)
-			}
-			resp, err := http.Get(configs.Restarturl)
-			if err != nil {
-				log.Println("can not send request to start Engine")
-			} else {
-				log.Println(resp)
-			}
+			for _,command := range configs.Commands {
+				cmd := exec.Command("sh", "-c", "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + "'"+ command+ "'" )
+				err := cmd.Run()
+				if err != nil {
+					log.Println("Error running command:", err, "on command ", command)
+				} else {
+					log.Println("COMMAND : ",command , " runned successfully")
+				}
+		}
+			
 			
 		}
 	}
