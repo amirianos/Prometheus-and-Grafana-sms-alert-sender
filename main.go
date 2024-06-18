@@ -183,7 +183,9 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
 		if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
 			for _,command := range configs.Commands {
-				cmd := exec.Command("sh", "-c", "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + "\"" + command + "\"" )
+				fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + "\"" + command + "\"" 
+				cmd := exec.Command("sh", "-c", fin_command )
+				log.Println("I want run command : ", fin_command)
 				err := cmd.Run()
 				if err != nil {
 					log.Println("Error running command:", err, "on command ", command)
