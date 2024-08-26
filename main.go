@@ -179,8 +179,9 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 	} else {
 		finalMessage = "I can not find alert state .Please check your Application"
 	}
-     
+	fmt.Println("start checking labels and alertname for run commands")
 	if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
+		fmt.Println("inside of run commands loop")
 		for _,command := range configs.Commands {
 			fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
 			cmd := exec.Command("sh", "-c", fin_command )
@@ -192,9 +193,12 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 				log.Println("COMMAND : ",command , " runned successfully")
 			}
 	}
+	fmt.Println("finish checking labels and alertname for run commands")
 
 	for _, phoneNumber := range configs.Contacts {
+		fmt.Println("start calling sendsms function for number:", phoneNumber)
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
+		fmt.Println("finish calling sendsms function for number:", phoneNumber)
 		// if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
 		// 	for _,command := range configs.Commands {
 		// 		fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
@@ -215,6 +219,7 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 
 
 func sendSMS(message, phoneNumber, URL, smsUsername, smsPassword string) error {
+	fmt.Println("send sms function Starts")
 	// Define the URL
 	url := URL
 
@@ -251,6 +256,7 @@ func sendSMS(message, phoneNumber, URL, smsUsername, smsPassword string) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("received non-OK response status: %v", resp.Status)
 	}
+	fmt.Println("send sms function end")
 	log.Println(resp.StatusCode, smsRequest , resp)
 
 	return nil
