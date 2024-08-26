@@ -179,22 +179,35 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 	} else {
 		finalMessage = "I can not find alert state .Please check your Application"
 	}
+     
+	if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
+		for _,command := range configs.Commands {
+			fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
+			cmd := exec.Command("sh", "-c", fin_command )
+			log.Println("I want run command : ", fin_command)
+			err := cmd.Run()
+			if err != nil {
+				log.Println("Error running command:", err, "on command ", command)
+			} else {
+				log.Println("COMMAND : ",command , " runned successfully")
+			}
+	}
+
 	for _, phoneNumber := range configs.Contacts {
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
-		if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
-			for _,command := range configs.Commands {
-				fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
-				cmd := exec.Command("sh", "-c", fin_command )
-				log.Println("I want run command : ", fin_command)
-				err := cmd.Run()
-				if err != nil {
-					log.Println("Error running command:", err, "on command ", command)
-				} else {
-					log.Println("COMMAND : ",command , " runned successfully")
-				}
-		}
-			
-			
+		// if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
+		// 	for _,command := range configs.Commands {
+		// 		fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
+		// 		cmd := exec.Command("sh", "-c", fin_command )
+		// 		log.Println("I want run command : ", fin_command)
+		// 		err := cmd.Run()
+		// 		if err != nil {
+		// 			log.Println("Error running command:", err, "on command ", command)
+		// 		} else {
+		// 			log.Println("COMMAND : ",command , " runned successfully")
+		// 		}
+		// }
+					
 		}
 	}
 }
