@@ -179,9 +179,9 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 	} else {
 		finalMessage = "I can not find alert state .Please check your Application"
 	}
-	fmt.Println("start checking labels and alertname for run commands","alertRequest.Alerts[0].Labels.Alertname is", alertRequest.Alerts[0].Labels.Alertname, "    ",configs.Alertname,"    ",configs.Runcommands)
-	if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
-		fmt.Println("inside of run commands loop")
+	fmt.Println("start checking labels and alertname for run commands")
+	if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands && alertRequest.Status == "firing"  {
+		fmt.Println("start running commands")
 		for _,command := range configs.Commands {
 			fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
 			cmd := exec.Command("sh", "-c", fin_command )
@@ -192,6 +192,8 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 			} else {
 				log.Println("COMMAND : ",command , " runned successfully")
 			}
+		}
+		fmt.Println("finish running commands")
 	}
 	fmt.Println("finish checking labels and alertname for run commands")
 
@@ -212,7 +214,7 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 		// 		}
 		// }
 					
-		}
+		
 	}
 }
 
