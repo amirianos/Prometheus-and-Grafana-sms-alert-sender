@@ -1,9 +1,17 @@
 contacts:
   - "09*********"
   - "09*********"
-containerid: ""
-restarturl: ""
-alertname: ""
+alerts:
+  - alertname: "testalert1"
+    alertpath: "/opt/testalert1.sh"
+    runcommand: true
+    executinguser: "root"
+    serverip: "x.x.x.x"
+  - alertname: "testalert2"
+    alertpath: "/opt/testalert2.sh"
+    runcommand: false
+    executinguser: "root"
+    serverip: "x.x.x.x"
 runcommands: False
 smsgateway:
   url: "http://**.**.**.**:****/*****"
