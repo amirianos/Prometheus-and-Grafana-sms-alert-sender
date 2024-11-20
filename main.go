@@ -1,84 +1,84 @@
 package main
 
 import (
-	"log"
-	"io/ioutil"
-	"fmt"
-	"gopkg.in/yaml.v2"
-	"net/http"
-	"encoding/json"
 	"bytes"
-	"time"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os/exec"
+	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Contacts   []string `yaml:"contacts"`
-	Containerid      string `yaml:"containerid"`
-	Restarturl       string `yaml:"restarturl"`
-	Alertname       string `yaml:"alertname"`
-	Runcommands     bool `yaml:"runcommands"`
-	Commands     []string `yaml:"commands"`
-	RootPassword  string `yaml:"rootpassword"`
-	ServerIP      string `yaml:"serverip"`
+	Contacts []string `yaml:"contacts"`
+	Alerts   []struct {
+		Alertname     string `yaml:"alertname"`
+		Alertpath     string `yaml:"alertpath"`
+		ServerIP      string `yaml:"serverip"`
+		RunCommand    bool   `yaml:"runcommand"`
+		ExecutingUser string `yaml:"executinguser"`
+	} `yaml:"alerts"`
 	Smsgateway struct {
 		URL      string `yaml:"url"`
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 	} `yaml:"smsgateway"`
-
 }
 
 type PrometheusRequests struct {
 	Receiver string `json:"receiver"`
-	Status string `json:"status"`
-	Alerts []struct {
+	Status   string `json:"status"`
+	Alerts   []struct {
 		Status string `json:"status"`
 		Labels struct {
 			Alertname string `json:"alertname"`
-			Config string `json:"command"`
-			Instance string `json:"instance"`
-			Job string `json:"job"`
-			Severity string `json:"severity"`
+			Config    string `json:"command"`
+			Instance  string `json:"instance"`
+			Job       string `json:"job"`
+			Severity  string `json:"severity"`
 		} `json:"labels"`
 		Annotations struct {
 			Summary string `json:"summary"`
 		} `json:"annotations"`
-		StartsAt time.Time `json:"startsAt"`
-		EndsAt time.Time `json:"endsAt"`
-		GeneratorURL string `json:"generatorURL"`
-		Fingerprint string `json:"fingerprint"`
+		StartsAt     time.Time `json:"startsAt"`
+		EndsAt       time.Time `json:"endsAt"`
+		GeneratorURL string    `json:"generatorURL"`
+		Fingerprint  string    `json:"fingerprint"`
 	} `json:"alerts"`
 	GroupLabels struct {
 		Alertname string `json:"alertname"`
-		Instance string `json:"instance"`
+		Instance  string `json:"instance"`
 	} `json:"groupLabels"`
 	CommonLabels struct {
 		Alertname string `json:"alertname"`
-		Config string `json:"command"`
-		Instance string `json:"instance"`
-		Job string `json:"job"`
-		Severity string `json:"severity"`
+		Config    string `json:"command"`
+		Instance  string `json:"instance"`
+		Job       string `json:"job"`
+		Severity  string `json:"severity"`
 	} `json:"commonLabels"`
 	CommonAnnotations struct {
 		Summary string `json:"summary"`
 	} `json:"commonAnnotations"`
-	ExternalURL string `json:"externalURL"`
-	Version string `json:"version"`
-	GroupKey string `json:"groupKey"`
-	TruncatedAlerts int `json:"truncatedAlerts"`
+	ExternalURL     string `json:"externalURL"`
+	Version         string `json:"version"`
+	GroupKey        string `json:"groupKey"`
+	TruncatedAlerts int    `json:"truncatedAlerts"`
 }
 
 type GrafanaRequests struct {
-	Title string `json:"title"`
-	RuleID int `json:"ruleId"`
-	RuleName string `json:"ruleName"`
-	State string `json:"state"`
+	Title       string        `json:"title"`
+	RuleID      int           `json:"ruleId"`
+	RuleName    string        `json:"ruleName"`
+	State       string        `json:"state"`
 	EvalMatches []interface{} `json:"evalMatches"`
-	OrgID int `json:"orgId"`
-	DashboardID int `json:"dashboardId"`
-	PanelID int `json:"panelId"`
-	Tags struct {
+	OrgID       int           `json:"orgId"`
+	DashboardID int           `json:"dashboardId"`
+	PanelID     int           `json:"panelId"`
+	Tags        struct {
 	} `json:"tags"`
 	RuleURL string `json:"ruleUrl"`
 	Message string `json:"message"`
@@ -104,14 +104,13 @@ func main() {
 	// Set up a HTTP server to recive requests
 	mux := http.NewServeMux()
 	mux.HandleFunc("/grafana", func(w http.ResponseWriter, r *http.Request) {
-        	grafanaAlertingHandler(w, r, configs)
-        })
+		grafanaAlertingHandler(w, r, configs)
+	})
 	mux.HandleFunc("/alertmanager", func(w http.ResponseWriter, r *http.Request) {
-        	prometheusAlertingHandler(w, r, configs)
-        })
+		prometheusAlertingHandler(w, r, configs)
+	})
 	log.Fatal(http.ListenAndServe(":5000", mux))
 }
-
 
 func grafanaAlertingHandler(w http.ResponseWriter, r *http.Request, configs Config) {
 	// Ensure the request method is POST
@@ -138,9 +137,9 @@ func grafanaAlertingHandler(w http.ResponseWriter, r *http.Request, configs Conf
 	w.Write([]byte("Alert/Resolve received successfully"))
 	finalMessage := ""
 	if alertRequest.State == "ok" {
-		finalMessage = fmt.Sprintf("*Resolve Message*\nTitle: %s\nDescription: %s\nState: %s",alertRequest.Title,alertRequest.Message,alertRequest.State)
+		finalMessage = fmt.Sprintf("*Resolve Message*\nTitle: %s\nDescription: %s\nState: %s", alertRequest.Title, alertRequest.Message, alertRequest.State)
 	} else if alertRequest.State == "alerting" {
-		finalMessage = fmt.Sprintf("*Alerting Message*\nTitle: %s\nDescription: %s\nState: %s",alertRequest.Title,alertRequest.Message,alertRequest.State)
+		finalMessage = fmt.Sprintf("*Alerting Message*\nTitle: %s\nDescription: %s\nState: %s", alertRequest.Title, alertRequest.Message, alertRequest.State)
 	} else {
 		finalMessage = "I can not find alert state .Please check your Application"
 	}
@@ -148,7 +147,6 @@ func grafanaAlertingHandler(w http.ResponseWriter, r *http.Request, configs Conf
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
 	}
 }
-
 
 func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs Config) {
 	// Ensure the request method is POST
@@ -180,20 +178,21 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 		finalMessage = "I can not find alert state .Please check your Application"
 	}
 	fmt.Println("start checking labels and alertname for run commands")
-	if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands && alertRequest.Status == "firing"  {
-		fmt.Println("start running commands")
-		for _,command := range configs.Commands {
-			fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
-			cmd := exec.Command("sh", "-c", fin_command )
+	for _, alerts := range configs.Alerts {
+		if alertRequest.Alerts[0].Labels.Alertname == alerts.Alertname && alerts.RunCommand && alertRequest.Status == "firing" {
+			fmt.Println("start running commands")
+			fmt.Println("I'm Executing " + alerts.Alertname + "on IP: " + alerts.ServerIP + "Command name is : " + alerts.Alertpath)
+			fin_command := "ssh  " + alerts.ExecutingUser + "@" + alerts.ServerIP + alerts.Alertpath
+			cmd := exec.Command("sh", "-c", fin_command)
 			log.Println("I want run command : ", fin_command)
 			err := cmd.Run()
 			if err != nil {
-				log.Println("Error running command:", err, "on command ", command)
+				log.Println("Error running command:", err, "on command ", fin_command)
 			} else {
-				log.Println("COMMAND : ",command , " runned successfully")
+				log.Println("COMMAND : ", fin_command, " runned successfully")
 			}
+			fmt.Println("finish running commands")
 		}
-		fmt.Println("finish running commands")
 	}
 	fmt.Println("finish checking labels and alertname for run commands")
 
@@ -201,24 +200,9 @@ func prometheusAlertingHandler(w http.ResponseWriter, r *http.Request, configs C
 		fmt.Println("start calling sendsms function for number:", phoneNumber)
 		sendSMS(finalMessage, phoneNumber, configs.Smsgateway.URL, configs.Smsgateway.Username, configs.Smsgateway.Password)
 		fmt.Println("finish calling sendsms function for number:", phoneNumber)
-		// if alertRequest.Alerts[0].Labels.Alertname == configs.Alertname && configs.Runcommands {
-		// 	for _,command := range configs.Commands {
-		// 		fin_command :=  "sshpass -p '"+ configs.RootPassword +"' ssh -o StrictHostKeyChecking=no root@"+ configs.ServerIP + command  
-		// 		cmd := exec.Command("sh", "-c", fin_command )
-		// 		log.Println("I want run command : ", fin_command)
-		// 		err := cmd.Run()
-		// 		if err != nil {
-		// 			log.Println("Error running command:", err, "on command ", command)
-		// 		} else {
-		// 			log.Println("COMMAND : ",command , " runned successfully")
-		// 		}
-		// }
-					
-		
+
 	}
 }
-
-
 
 func sendSMS(message, phoneNumber, URL, smsUsername, smsPassword string) error {
 	fmt.Println("send sms function Starts")
@@ -259,7 +243,7 @@ func sendSMS(message, phoneNumber, URL, smsUsername, smsPassword string) error {
 		return fmt.Errorf("received non-OK response status: %v", resp.Status)
 	}
 	fmt.Println("send sms function end")
-	log.Println(resp.StatusCode, smsRequest , resp)
+	log.Println(resp.StatusCode, smsRequest, resp)
 
 	return nil
 }
